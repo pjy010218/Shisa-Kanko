@@ -1,0 +1,1 @@
+AI/User change distiction logic이 제대로 동작하는지 실험하고 확인하기.

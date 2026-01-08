@@ -1,0 +1,74 @@
+{
+  "name": "shisa-kanko",
+  "displayName": "Shisa-Kanko",
+  "description": "Universal HUD for AI Agents. Highlights code changes proposed by internal/external agents via WebSockets.",
+  "version": "0.0.1",
+  "publisher": "shisa-kanko",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Shisa-Kanko",
+      "properties": {
+        "shisa-kanko.port": {
+          "type": "number",
+          "default": 3000,
+          "description": "Configure the port number for the WebSocket server."
+        },
+        "shisa-kanko.observerMode": {
+          "type": "string",
+          "enum": [
+            "selective",
+            "none"
+          ],
+          "default": "selective",
+          "description": "Control how Shisa-Kanko observes changes. 'selective' ignores your manual typing and only highlights significant agent-like changes. 'none' disables auto-observation (WebSocket only)."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "shisa-kanko.clearHighlights",
+        "title": "Shisa-Kanko: Clear AI Highlights"
+      },
+      {
+        "command": "shisa-kanko.hideStandardDiffs",
+        "title": "Shisa-Kanko: Focus Mode (Hide Standard Gutter Diffs)"
+      },
+      {
+        "command": "shisa-kanko.showStandardDiffs",
+        "title": "Shisa-Kanko: Restore Standard Gutter Diffs"
+      }
+    ],
+    "colors": [
+      {
+        "id": "shisa.kanko.fileDecoration",
+        "description": "Color for AI modified files in Explorer",
+        "defaults": {
+          "light": "#c7ddff",
+          "dark": "#3083ff",
+          "highContrast": "#334e77"
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}
