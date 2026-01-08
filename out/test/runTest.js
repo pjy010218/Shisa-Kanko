@@ -39,8 +39,15 @@ async function main() {
     try {
         const extensionDevelopmentPath = path.resolve(__dirname, '../../');
         const extensionTestsPath = path.resolve(__dirname, './suite/index');
+        const launchArgs = [
+            '--user-data-dir=${os.tmpdir()}/vsc-test'
+        ];
         // Download VS Code, unzip it and run the integration test
-        await (0, test_electron_1.runTests)({ extensionDevelopmentPath, extensionTestsPath });
+        await (0, test_electron_1.runTests)({
+            extensionDevelopmentPath,
+            extensionTestsPath,
+            launchArgs
+        });
     }
     catch (err) {
         console.error('Failed to run tests');
