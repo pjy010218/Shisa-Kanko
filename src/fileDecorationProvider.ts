@@ -14,7 +14,7 @@ export class AIFileDecorationProvider implements vscode.FileDecorationProvider {
     }
 
     provideFileDecoration(uri: vscode.Uri): vscode.FileDecoration | undefined {
-        if (this.activePaths.has(uri.fsPath)) {
+        if (this.activePaths.has(uri.fsPath.toLowerCase())) {
             return {
                 badge: 'AI',
                 tooltip: 'AI modification planned',

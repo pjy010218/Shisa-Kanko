@@ -1,5 +1,11 @@
 # Shisa-Kanko (Code Observer HUD)
 
+![CI Status](https://github.com/pjy010218/AI_CodingAgent_Highlighter/actions/workflows/ci.yml/badge.svg)
+[![Version](https://img.shields.io/visual-studio-marketplace/v/spec-tre.shisa-kanko)](https://marketplace.visualstudio.com/items?itemName=spec-tre.shisa-kanko)
+[![License](https://img.shields.io/github/license/pjy010218/AI_CodingAgent_Highlighter)](https://github.com/pjy010218/AI_CodingAgent_Highlighter/blob/main/LICENSE)
+
+![Shisa-Kanko Demo](media/hero.gif)
+
 **Shisa-Kanko** is a "Universal HUD for AI Agents". It is a pure visualization tool that highlights code changes proposed by AI agents, inspired by the Japanese safety practice of *pointing and calling*.
 
 Unlike other AI extensions, **Shisa-Kanko is NOT an AI model**. It is an observer that visualizes the intentions of *other* agents (internal or external) in real-time.
@@ -46,6 +52,9 @@ const ws = new WebSocket('ws://localhost:3000', {
 | Setting | Default | Description |
 | :--- | :--- | :--- |
 | `shisa-kanko.port` | `3000` | The port number for the WebSocket server. |
+| `shisa-kanko.observerMode` | `selective` | Controls autonomous observation: `selective` (ignore manual typing), `force` (always on), or `none` (WebSocket only). |
+| `shisa-kanko.hudStyle` | `high-visibility` | Choose visual style: `high-visibility`, `minimalist` (gutter), or `underline`. |
+
 
 ## JSON Protocol
 
@@ -66,7 +75,27 @@ To highlight changes, simply send a JSON object to Shisa-Kanko's WebSocket serve
 }
 ```
 
-## Getting Started
+## Quick Start Example
+
+Want to test it immediately? Copy this python snippet (requires `pip install websockets`):
+
+```python
+import asyncio, websockets, json, os
+
+async def hello():
+    # Replace with your token from VS Code command: "Shisa-Kanko: Show Connection Token"
+    token = "YOUR_TOKEN"
+    uri = "ws://localhost:3000"
+    async with websockets.connect(uri, additional_headers={"x-shisa-token": token}) as ws:
+        await ws.send(json.dumps({
+            "planId": "test-1", "status": "suggestion",
+            "targets": [{ "filePath": os.path.abspath(__file__), "lines": [1], "changeType": "refactor", "reason": "Hello Shisa!" }]
+        }))
+        print("Sent!")
+
+asyncio.run(hello())
+```
+
 
 1. **Install**: `npm install`
 2. **Launch**: Press `F5` in VS Code to start the extension.

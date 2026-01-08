@@ -49,7 +49,7 @@ class AIFileDecorationProvider {
         this._onDidChangeFileDecorations.fire(undefined);
     }
     provideFileDecoration(uri) {
-        if (this.activePaths.has(uri.fsPath)) {
+        if (this.activePaths.has(uri.fsPath.toLowerCase())) {
             return {
                 badge: 'AI',
                 tooltip: 'AI modification planned',

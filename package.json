@@ -3,7 +3,7 @@
   "displayName": "Shisa-Kanko",
   "description": "Universal HUD for AI Agents. Highlights code changes proposed by internal/external agents via WebSockets.",
   "version": "0.0.1",
-  "publisher": "shisa-kanko",
+  "publisher": "spec-tre",
   "icon": "media/logo.jpg",
   "engines": {
     "vscode": "^1.90.0"

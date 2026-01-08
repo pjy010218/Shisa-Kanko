@@ -1,7 +1,7 @@
+.gitignore
 .vscode
 .vscode-test
 *.txt
 TODO.md
-UPDATE.md
 What_is_Missing.md
 instructions.md

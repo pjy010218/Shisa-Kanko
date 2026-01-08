@@ -73,6 +73,9 @@ export class DecorationManager {
                 absolutePath = vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri, target.filePath).fsPath;
             }
 
+            // Normalize path for Map key to avoid casing issues (Windows/macOS)
+            const keyPath = absolutePath.toLowerCase();
+
             // Map changeType to our internal keys
             const typeKey = (target.changeType === 'logic_change' || target.changeType === 'refactor') ? target.changeType : 'suggestion';
 
@@ -81,19 +84,19 @@ export class DecorationManager {
                 hoverMessage: target.reason ? new vscode.MarkdownString(`**[Shisa-Kanko HUD]**\n\n${target.reason}`) : undefined
             }));
 
-            if (!this.activeDecorations.has(absolutePath)) this.activeDecorations.set(absolutePath, new Map());
-            const fileMap = this.activeDecorations.get(absolutePath)!;
+            if (!this.activeDecorations.has(keyPath)) this.activeDecorations.set(keyPath, new Map());
+            const fileMap = this.activeDecorations.get(keyPath)!;
 
             const existingOptions = fileMap.get(typeKey) || [];
             fileMap.set(typeKey, [...existingOptions, ...options]);
 
-            this.lastModificationTimes.set(absolutePath, Date.now());
+            this.lastModificationTimes.set(keyPath, Date.now());
         }
         this.updateVisibleEditors();
     }
 
     public updateEditor(editor: vscode.TextEditor) {
-        const path = editor.document.uri.fsPath;
+        const path = editor.document.uri.fsPath.toLowerCase(); // Normalize
         const fileMap = this.activeDecorations.get(path);
 
         // Always clear first
@@ -131,6 +134,8 @@ export class DecorationManager {
                 count += options.length;
             }
             if (count > 0) {
+                // Note: path is lowercased key. This might look ugly in UI.
+                // ideally we store the display path separately, but for now this works.
                 details.push({ path, signalCount: count });
             }
         }
@@ -146,11 +151,11 @@ export class DecorationManager {
     }
 
     public getLastModified(path: string): number {
-        return this.lastModificationTimes.get(path) || 0;
+        return this.lastModificationTimes.get(path.toLowerCase()) || 0;
     }
 
     public getFirstHighlightRange(uri: vscode.Uri): vscode.Range | undefined {
-        const fileMap = this.activeDecorations.get(uri.fsPath);
+        const fileMap = this.activeDecorations.get(uri.fsPath.toLowerCase());
         if (!fileMap) return undefined;
 
         const allOptions = Array.from(fileMap.values()).flat();
@@ -161,8 +166,9 @@ export class DecorationManager {
 
     public clear(path?: string) {
         if (path) {
-            this.activeDecorations.delete(path);
-            this.lastModificationTimes.delete(path);
+            const keyPath = path.toLowerCase();
+            this.activeDecorations.delete(keyPath);
+            this.lastModificationTimes.delete(keyPath);
         } else {
             this.activeDecorations.clear();
             this.lastModificationTimes.clear();

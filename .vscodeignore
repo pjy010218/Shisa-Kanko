@@ -1,0 +1,12 @@
+.vscode/**
+.vscode-test/**
+src/**
+.github/**
+
+tsconfig.json
+.gitignore
+.vscodeignore
+test.py
+TODO.md
+instructions.md
+changes.txt
