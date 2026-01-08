@@ -1,6 +1,7 @@
-.vscode-test
 .vscode
-
+.vscode-test
 *.txt
-*.md
-!README.md
+TODO.md
+UPDATE.md
+What_is_Missing.md
+instructions.md
