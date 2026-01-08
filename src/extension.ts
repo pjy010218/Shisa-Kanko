@@ -2,22 +2,31 @@ import * as vscode from 'vscode';
 import { AgentListener } from './agentListener';
 import { DecorationManager } from './decorationManager';
 import { AIFileDecorationProvider } from './fileDecorationProvider';
+import { StatusBarManager } from './statusBarManager';
 
 let agentListener: AgentListener | undefined;
+let statusBarManager: StatusBarManager;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('[Shisa-Kanko] Activating Observer HUD...');
     const decorationManager = new DecorationManager();
     const fileDecorationProvider = new AIFileDecorationProvider();
+    statusBarManager = new StatusBarManager(decorationManager);
 
     const config = vscode.workspace.getConfiguration('shisa-kanko');
     const port = config.get<number>('port', 3000);
-    agentListener = new AgentListener(port);
+    agentListener = new AgentListener(port, context.secrets);
     agentListener.start();
 
     vscode.workspace.onDidChangeConfiguration(e => {
         if (e.affectsConfiguration('shisa-kanko.port')) {
-            vscode.window.showInformationMessage('포트 설정이 변경되었습니다. 변경 사항을 적용하려면 VS Code를 재시작하거나 익스텐션을 다시 로드해주세요.');
+            const newPort = vscode.workspace.getConfiguration('shisa-kanko').get<number>('port', 3000);
+            agentListener?.restart(newPort);
+            vscode.window.showInformationMessage(`[Shisa-Kanko] Server restarting on port ${newPort}`);
+        }
+        if (e.affectsConfiguration('shisa-kanko.hudStyle')) {
+            decorationManager.reloadStyles();
+            vscode.window.setStatusBarMessage('[Shisa-Kanko] HUD Style Updated', 2000);
         }
     });
 
@@ -25,6 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
     const syncHUD = () => {
         const allActivePaths = decorationManager.getActivePaths();
         fileDecorationProvider.update(allActivePaths);
+        statusBarManager.update(decorationManager.getTotalSignalCount());
     };
 
     // Handle plans received from agents (Internal or External via WebSocket)
@@ -42,6 +52,22 @@ export function activate(context: vscode.ExtensionContext) {
             if (firstRange) {
                 editor.revealRange(firstRange, vscode.TextEditorRevealType.InCenter);
                 editor.selection = new vscode.Selection(firstRange.start, firstRange.start);
+            }
+        }
+    });
+
+    const showTokenCommand = vscode.commands.registerCommand('shisa-kanko.showToken', async () => {
+        if (agentListener) {
+            const token = await agentListener.getToken();
+            const copyOption = 'Copy to Clipboard';
+            const choice = await vscode.window.showInformationMessage(
+                `Shisa-Kanko Connection Token: ${token}`,
+                { modal: true },
+                copyOption
+            );
+            if (choice === copyOption) {
+                await vscode.env.clipboard.writeText(token);
+                vscode.window.showInformationMessage('Token copied to clipboard.');
             }
         }
     });
@@ -98,7 +124,9 @@ export function activate(context: vscode.ExtensionContext) {
         saveSub,
         clearCommand,
         hideDiffsCommand,
-        showDiffsCommand
+        showDiffsCommand,
+        showTokenCommand,
+        statusBarManager
     );
 }
 

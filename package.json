@@ -4,6 +4,7 @@
   "description": "Universal HUD for AI Agents. Highlights code changes proposed by internal/external agents via WebSockets.",
   "version": "0.0.1",
   "publisher": "shisa-kanko",
+  "icon": "media/logo.jpg",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -28,6 +29,16 @@
           ],
           "default": "selective",
           "description": "Control how Shisa-Kanko observes changes. 'selective' ignores your manual typing and only highlights significant agent-like changes. 'none' disables auto-observation (WebSocket only)."
+        },
+        "shisa-kanko.hudStyle": {
+          "type": "string",
+          "enum": [
+            "high-visibility",
+            "minimalist",
+            "underline"
+          ],
+          "default": "high-visibility",
+          "description": "Style of the specific code highlights."
         }
       }
     },
@@ -43,6 +54,10 @@
       {
         "command": "shisa-kanko.showStandardDiffs",
         "title": "Shisa-Kanko: Restore Standard Gutter Diffs"
+      },
+      {
+        "command": "shisa-kanko.showToken",
+        "title": "Shisa-Kanko: Show Connection Token"
       }
     ],
     "colors": [
@@ -50,25 +65,49 @@
         "id": "shisa.kanko.fileDecoration",
         "description": "Color for AI modified files in Explorer",
         "defaults": {
-          "light": "#c7ddff",
-          "dark": "#3083ff",
-          "highContrast": "#334e77"
+          "light": "#397fe7",
+          "dark": "#cde1ff",
+          "highContrast": "#1d3353"
         }
       }
+    ],
+    "categories": [
+      "Linters",
+      "Other"
+    ],
+    "keywords": [
+      "AI",
+      "HUD",
+      "Visualization",
+      "Agent",
+      "Highlight",
+      "Code",
+      "Diff",
+      "WebSocket"
     ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "test": "node ./out/test/runTest.js"
   },
   "dependencies": {
     "ws": "^8.18.3"
   },
   "devDependencies": {
-    "@types/ws": "^8.18.1",
-    "@types/vscode": "^1.80.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^18.0.0",
+    "@types/vscode": "^1.80.0",
+    "@types/ws": "^8.18.1",
+    "@vscode/test-electron": "^2.5.2",
+    "glob": "^13.0.0",
+    "mocha": "^11.7.5",
     "typescript": "^5.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pjy010218/AI_CodingAgent_Highlighter"
+  },
+  "license": "MIT"
 }

@@ -25,6 +25,22 @@ Modified files are marked in the File Explorer:
 - **Badge**: `AI` (next to filename)
 - **Color**: Distinctive light blue text (`#c7ddff`)
 
+## Security & Authentication
+
+To prevent unauthorized access, Shisa-Kanko uses a token-based authentication system.
+
+1. **Get the Token**: runs the command `Shisa-Kanko: Show Connection Token` in VS Code.
+2. **Connect**: When your external agent connects to the WebSocket (default port 3000), it MUST include the `x-shisa-token` header with this token value.
+
+```javascript
+const WebSocket = require('ws');
+const ws = new WebSocket('ws://localhost:3000', {
+    headers: {
+        'x-shisa-token': 'YOUR_SECURE_TOKEN_HERE'
+    }
+});
+```
+
 ## Configuration
 
 | Setting | Default | Description |

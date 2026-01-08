@@ -2,38 +2,68 @@ import * as vscode from 'vscode';
 import { AgentModificationPlan, ModificationTarget } from './types';
 
 export class DecorationManager {
-    private logicDecoration: vscode.TextEditorDecorationType;
-    private refactorDecoration: vscode.TextEditorDecorationType;
-    private suggestionDecoration: vscode.TextEditorDecorationType;
+    // Initialized in reloadStyles via constructor
+    private logicDecoration!: vscode.TextEditorDecorationType;
+    private refactorDecoration!: vscode.TextEditorDecorationType;
+    private suggestionDecoration!: vscode.TextEditorDecorationType;
 
-    // fsPath -> Map of decoration types -> decoration options
-    private activeDecorations = new Map<string, Map<vscode.TextEditorDecorationType, vscode.DecorationOptions[]>>();
+    // fsPath -> Map of changeType (string) -> decoration options
+    // internal identifiers: 'logic_change', 'refactor', 'suggestion'
+    private activeDecorations = new Map<string, Map<string, vscode.DecorationOptions[]>>();
 
     // Persistent tracking of last modification time per file
     private lastModificationTimes = new Map<string, number>();
 
     constructor() {
-        this.logicDecoration = vscode.window.createTextEditorDecorationType({
-            backgroundColor: 'rgba(0, 150, 255, 0.4)',
-            outline: '2.5px solid rgba(0, 150, 255, 0.8)',
-            isWholeLine: true,
-            overviewRulerColor: 'blue',
-            overviewRulerLane: vscode.OverviewRulerLane.Full,
-        });
-        this.refactorDecoration = vscode.window.createTextEditorDecorationType({
-            backgroundColor: 'rgba(75, 200, 75, 0.4)',
-            outline: '2.5px solid rgba(75, 200, 75, 0.8)',
-            isWholeLine: true,
-            overviewRulerColor: 'green',
-            overviewRulerLane: vscode.OverviewRulerLane.Full,
-        });
-        this.suggestionDecoration = vscode.window.createTextEditorDecorationType({
-            backgroundColor: 'rgba(255, 204, 0, 0.4)',
-            outline: '2.5px solid rgba(255, 204, 0, 0.8)',
-            isWholeLine: true,
-            overviewRulerColor: 'yellow',
-            overviewRulerLane: vscode.OverviewRulerLane.Full,
-        });
+        this.reloadStyles();
+    }
+
+    public reloadStyles() {
+        // Dispose existing if methods exist (in restart scenarios)
+        if (this.logicDecoration) this.logicDecoration.dispose();
+        if (this.refactorDecoration) this.refactorDecoration.dispose();
+        if (this.suggestionDecoration) this.suggestionDecoration.dispose();
+
+        const config = vscode.workspace.getConfiguration('shisa-kanko');
+        const styleProfile = config.get<string>('hudStyle', 'high-visibility');
+
+        this.logicDecoration = this.createDecoration(styleProfile, 'rgba(0, 150, 255, 0.4)', 'rgba(0, 150, 255, 0.8)', 'blue');
+        this.refactorDecoration = this.createDecoration(styleProfile, 'rgba(75, 200, 75, 0.4)', 'rgba(75, 200, 75, 0.8)', 'green');
+        this.suggestionDecoration = this.createDecoration(styleProfile, 'rgba(255, 204, 0, 0.4)', 'rgba(255, 204, 0, 0.8)', 'yellow');
+
+        // Re-apply styles to active editors since decoration references changed
+        this.updateVisibleEditors();
+    }
+
+    private createDecoration(profile: string, bgColor: string, borderColor: string, rulerColor: string): vscode.TextEditorDecorationType {
+        if (profile === 'minimalist') {
+            return vscode.window.createTextEditorDecorationType({
+                backgroundColor: undefined, // No background
+                borderWidth: '0 0 0 4px', // Left border aka Gutter
+                borderStyle: 'solid',
+                borderColor: borderColor,
+                isWholeLine: true,
+                overviewRulerColor: rulerColor,
+                overviewRulerLane: vscode.OverviewRulerLane.Full
+            });
+        } else if (profile === 'underline') {
+            return vscode.window.createTextEditorDecorationType({
+                backgroundColor: undefined,
+                textDecoration: `underline wavy ${borderColor}`,
+                isWholeLine: true,
+                overviewRulerColor: rulerColor,
+                overviewRulerLane: vscode.OverviewRulerLane.Full
+            });
+        } else {
+            // Default: "high-visibility"
+            return vscode.window.createTextEditorDecorationType({
+                backgroundColor: bgColor,
+                outline: `2.5px solid ${borderColor}`,
+                isWholeLine: true,
+                overviewRulerColor: rulerColor,
+                overviewRulerLane: vscode.OverviewRulerLane.Full,
+            });
+        }
     }
 
     public async applyPlan(plan: AgentModificationPlan) {
@@ -43,12 +73,8 @@ export class DecorationManager {
                 absolutePath = vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri, target.filePath).fsPath;
             }
 
-            let dtype = this.suggestionDecoration;
-            if (target.changeType === 'logic_change') {
-                dtype = this.logicDecoration;
-            } else if (target.changeType === 'refactor') {
-                dtype = this.refactorDecoration;
-            }
+            // Map changeType to our internal keys
+            const typeKey = (target.changeType === 'logic_change' || target.changeType === 'refactor') ? target.changeType : 'suggestion';
 
             const options: vscode.DecorationOptions[] = target.lines.map(line => ({
                 range: new vscode.Range(line - 1, 0, line - 1, 2000),
@@ -58,8 +84,8 @@ export class DecorationManager {
             if (!this.activeDecorations.has(absolutePath)) this.activeDecorations.set(absolutePath, new Map());
             const fileMap = this.activeDecorations.get(absolutePath)!;
 
-            const existingOptions = fileMap.get(dtype) || [];
-            fileMap.set(dtype, [...existingOptions, ...options]);
+            const existingOptions = fileMap.get(typeKey) || [];
+            fileMap.set(typeKey, [...existingOptions, ...options]);
 
             this.lastModificationTimes.set(absolutePath, Date.now());
         }
@@ -70,13 +96,45 @@ export class DecorationManager {
         const path = editor.document.uri.fsPath;
         const fileMap = this.activeDecorations.get(path);
 
-        [this.logicDecoration, this.refactorDecoration, this.suggestionDecoration].forEach(d => editor.setDecorations(d, []));
+        // Always clear first
+        editor.setDecorations(this.logicDecoration, []);
+        editor.setDecorations(this.refactorDecoration, []);
+        editor.setDecorations(this.suggestionDecoration, []);
 
         if (fileMap) {
-            for (const [dtype, options] of fileMap) {
-                editor.setDecorations(dtype, options);
+            const logicOpts = fileMap.get('logic_change');
+            if (logicOpts) editor.setDecorations(this.logicDecoration, logicOpts);
+
+            const refactorOpts = fileMap.get('refactor');
+            if (refactorOpts) editor.setDecorations(this.refactorDecoration, refactorOpts);
+
+            const suggestionOpts = fileMap.get('suggestion');
+            if (suggestionOpts) editor.setDecorations(this.suggestionDecoration, suggestionOpts);
+        }
+    }
+
+    public getTotalSignalCount(): number {
+        let count = 0;
+        for (const fileMap of this.activeDecorations.values()) {
+            for (const options of fileMap.values()) {
+                count += options.length;
             }
         }
+        return count;
+    }
+
+    public getActiveFileDetails(): { path: string, signalCount: number }[] {
+        const details: { path: string, signalCount: number }[] = [];
+        for (const [path, fileMap] of this.activeDecorations) {
+            let count = 0;
+            for (const options of fileMap.values()) {
+                count += options.length;
+            }
+            if (count > 0) {
+                details.push({ path, signalCount: count });
+            }
+        }
+        return details;
     }
 
     public updateVisibleEditors() {
@@ -97,6 +155,7 @@ export class DecorationManager {
 
         const allOptions = Array.from(fileMap.values()).flat();
         const allRanges = allOptions.map(o => o.range);
+        if (allRanges.length === 0) return undefined;
         return allRanges.sort((a, b) => a.start.line - b.start.line)[0];
     }
 
