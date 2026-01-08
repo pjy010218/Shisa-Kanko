@@ -4,7 +4,7 @@
   "description": "Universal HUD for AI Agents. Highlights code changes proposed by internal/external agents via WebSockets.",
   "version": "0.0.1",
   "publisher": "spec-tre",
-  "icon": "media/logo.jpg",
+  "icon": "media/logo.png",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -107,7 +107,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pjy010218/AI_CodingAgent_Highlighter"
+    "url": "https://github.com/pjy010218/Shisa-Kanko"
   },
   "license": "MIT"
 }
